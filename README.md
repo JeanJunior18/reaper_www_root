@@ -4,6 +4,8 @@ Controle remoto do REAPER pelo celular, feito para tocar VS (playback) ao vivo: 
 
 É uma única página (`vs-jean.html`) servida pela interface web do próprio REAPER. Ela usa o `main.js` que já vem com o REAPER — não precisa instalar nada além disso.
 
+> ☕ **Curtiu o projeto?** Pague um café ao desenvolvedor — Pix: `pix@asherlabs.com.br` · [saiba mais](#-apoie-este-projeto)
+
 ---
 
 ## Sumário
