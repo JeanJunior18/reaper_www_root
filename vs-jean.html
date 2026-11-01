@@ -74,7 +74,6 @@ body.rec #time{color:var(--rec)}
 #rgnNext{font-size:12px;color:#808080;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #rgnNext b{color:#b0b0b0}
 #rgnNext.soon b,#rgnNext.q b{color:var(--yel)}
-#rgnNext.q::after{content:" · escolhida";color:var(--yel);font-size:11px}
 
 /* marcadores */
 #mk{align-items:stretch}
@@ -232,7 +231,7 @@ var playState=-1, recording=false, pos=0, lastPosStr="", numer=0, beat=-1, beatE
     repeatOn=false, loopRgn=null, loopSetAt=0, bLoopR=$("bLoopR"),
     nTrack=-1, rows=[], armedCount=0, armDirty=true,
     drag=null, sendReqAt=0,
-    elBpm=$("bpmV"), bpmA=null, bpmMeasured=false;
+    elBpm=$("bpmV"), bpmA=null, bpmMeasured=false, bps=0, measBeat=0, measNum=4;
 
 var HOME={n:"H", name:"INÍCIO"}, END={n:"E", name:"FIM"}, EPS=0.0005;
 
@@ -312,10 +311,10 @@ function updateBpm(st,p,fb){
     var dp=a?p-a.p:0, dw=a?(now-a.w)/1000:0;
     // salto de posição (seek/loop): a posição andou muito diferente do relógio → recomeça
     if(!a||dp<0||dw>2||dp>dw*4+0.05) bpmA={p:p,b:fb,w:now};
-    else if(dp>=0.5){ showBpm((fb-a.b)/dp*60); bpmMeasured=true; bpmA={p:p,b:fb,w:now}; }
+    else if(dp>=0.5){ bps=(fb-a.b)/dp; showBpm(bps*60); bpmMeasured=true; bpmA={p:p,b:fb,w:now}; }
   } else {
     bpmA=null;
-    if(!bpmMeasured){ if(p>0.01) showBpm(fb/p*60); else setText(elBpm,"--"); }
+    if(!bpmMeasured){ if(p>0.01){ bps=fb/p; showBpm(bps*60); } else setText(elBpm,"--"); }
   }
 }
 
@@ -327,6 +326,7 @@ function onBeat(t){
     for(var i=0;i<n;i++) beatEls.push(elBeats.appendChild(document.createElement("span")));
   }
   setText(elTsNum,t[6]); setText(elTsDen,t[7]);
+  measBeat=+t[5]; measNum=+t[6]||4;
   updateBpm(+t[1],+t[2],+t[3]);
   var b=Math.floor(+t[5]+1e-6);
   if(b!==beat){
@@ -431,6 +431,12 @@ function updateRegion(inRgn){
   // região escolhida no mapa: some quando o REAPER chega nela (ou se parar)
   var P=pendRgn;
   if(P&&(!(playState&1)||(pos>=P.s-EPS&&pos<P.e-EPS&&(!(P.t0>=P.s&&P.t0<P.e)||pos<P.t0-EPS)))) P=pendRgn=null;
+  // ainda não pedido: pede o pulo dentro do último compasso da região de origem.
+  // O smooth seek (fim de 1 compasso) segura até a virada desse compasso = fim da região.
+  if(P&&!P.sent){
+    var rem=bps>0?(measNum-measBeat)/bps:0;
+    if(!P.fe||!cur||pos>=P.fe-EPS||P.fe-pos<=rem+0.05) sendPend(P);
+  }
   for(i=0;i<mapEls.length;i++) setFlag(mapEls[i],"q",P&&+regions[i][3]===P.s);
   var L=repeatOn&&loopRgn;
   for(i=0;i<mapEls.length;i++) setFlag(mapEls[i],"lp",L&&+regions[i][3]===L.s&&+regions[i][4]===L.e);
@@ -438,10 +444,12 @@ function updateRegion(inRgn){
   setFlag(elRNext,"q",P);
 
   var dt;
-  if(P){ dt=cur?+cur[4]-pos:-1; showNext(P.name,dt>=0?" em "+fmtSec(dt):"",dt>=0&&dt<=8); }
+  if(P&&P.now) showNext(P.name," no próximo compasso",true);
+  else if(P){ dt=cur?+cur[4]-pos:-1; showNext(P.name,dt>=0?" no fim da região ("+fmtSec(dt)+") · toque de novo: próximo compasso":"",dt>=0&&dt<=8); }
   else if(nxt){ dt=+nxt[3]-pos; showNext(rgnName(nxt)," em "+fmtSec(dt),dt<=8); }
   else { setText(elRNext,regions.length?"última região":""); setFlag(elRNext,"soon",false); }
 }
+function sendPend(P){ P.sent=true; wwr_req("SET/POS/"+P.s); }
 function showNext(name,tail,soon){
   var txt=name+"\t"+tail;
   if(elRNext._t!==txt){
@@ -614,11 +622,13 @@ document.addEventListener("click",function(e){
   if(!b) return;
   if(b.dataset.pos){
     if(recording) return;
-    // tocando: com smooth seek ligado o REAPER só pula no fim da região atual, então fica "na fila"
     var r=regions[+b.dataset.r];
-    pendRgn=(r&&(playState&1))?{s:+r[3], e:+r[4], name:rgnName(r), t0:pos}:null;
     mapUserAt=0; mkPos=-1;
-    wwr_req("SET/POS/"+b.dataset.pos);
+    if(!(playState&1)||!r){ pendRgn=null; wwr_req("SET/POS/"+b.dataset.pos); }
+    // tocando, 2º toque na região escolhida: pede já → smooth seek pula na virada do compasso
+    else if(pendRgn&&pendRgn.s===+r[3]){ if(!pendRgn.sent){ pendRgn.now=true; sendPend(pendRgn); } }
+    // tocando, 1º toque: fica na fila; updateRegion pede o pulo no último compasso da região atual
+    else pendRgn={s:+r[3], e:+r[4], name:rgnName(r), t0:pos, fe:curRgn?+curRgn[4]:0, sent:false};
     updateMarkers();
     return;
   }
