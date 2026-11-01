@@ -499,7 +499,6 @@ function onTrack(t){
     setFlag(r.mute,"on",f&8);
     if(idx){
       var armed=!!(f&64);
-      setHidden(r.el,f&512);
       setFlag(r.el,"folder",f&1);
       setFlag(r.arm,"on",armed);
       setFlag(r.solo,"on",f&16);
