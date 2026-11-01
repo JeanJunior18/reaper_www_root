@@ -188,3 +188,21 @@ Situações comuns:
 - **Regiões e marcadores** criados ou editados direto no REAPER levam até 2 s para aparecer no celular (trocar de projeto ou criar marcador pela página atualiza na hora).
 - **Tracks escondidas no REAPER** continuam aparecendo na página (o sinal que o REAPER manda para isso não é confiável — fazia tracks-pasta piscarem durante o play).
 - **Rede:** a página consulta o REAPER 25×/s para o relógio, 4×/s para as tracks, 1×/s para metrônomo/snap e a cada 2 s para regiões/marcadores. Toques são enviados em até ~20 ms.
+
+---
+
+## ☕ Apoie este projeto
+
+Desenvolvi esta ferramenta a partir de uma necessidade real da minha própria igreja, com o objetivo de facilitar o trabalho de quem opera playbacks durante cultos e apresentações.
+
+Agora, compartilho gratuitamente para abençoar outras igrejas.
+
+Se o projeto te ajudou, considere pagar um café ao desenvolvedor. Sua contribuição incentiva a manutenção e a criação de novas ferramentas.
+
+**Toda contribuição é bem-vinda!**
+
+**Pix:** `pix@asherlabs.com.br`
+
+---
+
+Desenvolvido por **Jean** · [@asher.labs](https://www.instagram.com/asher.labs)

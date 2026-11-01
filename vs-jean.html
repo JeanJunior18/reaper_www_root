@@ -144,6 +144,15 @@ body.rec #time{color:var(--rec)}
 .sd{right:14px;font-size:12px}
 .smute{flex:0 0 48px;color:#805240;background:#3a3a3a}
 .smute.on{background:var(--red);color:#fff}
+
+/* assinatura */
+#sig{padding:16px 6px 12px;text-align:center;font-size:11px;color:#606060;line-height:1.5}
+#sig a{color:#808080;text-decoration:none}
+#coffee{margin-top:6px}
+#coffee strong{font-weight:400;color:#808080}
+#bPix{margin:8px auto 4px;min-height:32px;padding:0 14px;border-radius:16px;background:none;border-color:#444;font-size:11px;color:#808080}
+#pix{display:block;font-size:10px;-webkit-user-select:text;user-select:text}
+#pixMsg{min-height:1.5em;font-size:10px;color:var(--grn)}
 </style>
 </head>
 <body>
@@ -211,6 +220,16 @@ body.rec #time{color:var(--rec)}
     <button id="bRec" data-act="rec" aria-label="Gravar"><svg class="i"><use href="#i-rec"/></svg></button>
     <button id="bHome" data-cmd="40042" aria-label="Voltar ao início"><svg class="i"><use href="#i-home"/></svg></button>
   </div>
+
+  <footer id="sig">
+    <div class="by">Desenvolvido por Jean · <a href="https://www.instagram.com/asher.labs" target="_blank" rel="noopener">@asher.labs</a></div>
+    <div id="coffee">
+      ☕ Curtiu o projeto? <strong>Pague um café ao desenvolvedor.</strong>
+      <button id="bPix" data-act="pix">Apoiar via Pix</button>
+      <small id="pix">pix@asherlabs.com.br</small>
+      <div id="pixMsg"></div>
+    </div>
+  </footer>
 </div>
 
 <div id="tracks"></div>
@@ -608,6 +627,19 @@ var acts={
     if(s!=null) wwr_req("SET/POS_STR/"+encodeURIComponent(s));
   },
   rec:function(){ if(armedCount>0||confirm("Nenhuma track armada. Gravar mesmo assim?")) wwr_req(1013); },
+  // clipboard API exige https; na rede local (http) cai no execCommand
+  pix:function(){
+    var m=$("pixMsg"), key=$("pix").textContent,
+        done=function(){
+          m.textContent="Chave Pix copiada! Obrigado por apoiar ☕";
+          clearTimeout(m._tm); m._tm=setTimeout(function(){ m.textContent=""; },4000);
+        };
+    if(navigator.clipboard&&window.isSecureContext){ navigator.clipboard.writeText(key).then(done); return; }
+    var ta=document.createElement("textarea"); ta.value=key; ta.style.position="fixed"; ta.style.opacity="0";
+    document.body.appendChild(ta); ta.select();
+    try{ if(document.execCommand("copy")) done(); }catch(e){}
+    ta.remove();
+  },
   // 43102 = seleção na região atual (a mesma da sua ação "Live repeat region"); repeat ligado explicitamente, não alternado
   loopRgn:function(){
     if(loopRgn&&repeatOn){ loopRgn=null; wwr_req("SET/REPEAT/0;TRANSPORT"); }
@@ -639,7 +671,7 @@ document.addEventListener("click",function(e){
     wwr_req(b.dataset.cmd+extra);
     return;
   }
-  if(b.dataset.act){ acts[b.dataset.act](); return; }
+  if(b.dataset.act){ acts[b.dataset.act](b); return; }
   var k=b.dataset.k, idx=b.closest(".trk").dataset.t;
   if(k==="EXP") toggleOpen(rows[idx]);
   else if(k==="SMUTE") wwr_req("SET/TRACK/"+idx+"/SEND/"+b.closest(".snd").dataset.s+"/MUTE/-1");
