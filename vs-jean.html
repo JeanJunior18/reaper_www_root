@@ -116,8 +116,6 @@ body.rec #time{color:var(--rec)}
 .meta b.on{opacity:1}
 .ir.on{background:#7c8040;color:#eeff00}
 .is.on{background:#437480;color:#00d0ff}
-.clip{display:none;background:#922525;color:#ffbfbf}
-.trk.clip .clip{display:inline;opacity:1}
 .arm{border-radius:50%!important;height:48px;background:#5d3729;border:1px solid var(--p1)}
 .arm::after{content:"";width:16px;height:16px;border-radius:50%;border:4px solid rgba(255,255,255,.5)}
 .arm.on{background:var(--rec)}
@@ -177,8 +175,8 @@ body.rec #time{color:var(--rec)}
   </nav>
 
   <div id="proj" class="row">
-    <button data-cmd="312" data-sync aria-label="Projeto anterior"><svg class="i"><use href="#i-left"/></svg>Projeto</button>
-    <button data-cmd="40861" data-sync aria-label="Próximo projeto">Projeto<svg class="i"><use href="#i-right"/></svg></button>
+    <button data-cmd="312" data-sync data-proj aria-label="Projeto anterior"><svg class="i"><use href="#i-left"/></svg>Projeto</button>
+    <button data-cmd="40861" data-sync data-proj aria-label="Próximo projeto">Projeto<svg class="i"><use href="#i-right"/></svg></button>
   </div>
 
   <div id="song">
@@ -194,7 +192,7 @@ body.rec #time{color:var(--rec)}
     <div id="mkInfo">
       <div id="mkCells">
         <div class="mc empty" id="mkPrev"><span class="bd"></span><span class="mn"></span></div>
-        <div class="mc at empty" id="mkAt"><span class="bd"></span><span class="mn"></span><button id="bAddMk" data-cmd="40157" hidden>+ marcador</button></div>
+        <div class="mc at empty" id="mkAt"><span class="bd"></span><span class="mn"></span><button id="bAddMk" data-cmd="40157" data-sync hidden>+ marcador</button></div>
         <div class="mc empty" id="mkNext"><span class="bd"></span><span class="mn"></span></div>
       </div>
     </div>
@@ -469,8 +467,8 @@ function updateMarkers(){
 }
 
 // --- tracks ---
-var TPL_HEAD_TRACK='<button class="arm" data-k="RECARM" aria-label="Rec arm"></button><div class="ti" data-k="EXP"><div class="nm"></div><div class="meta"><span class="num"></span><span class="db"></span><b class="clip">CLIP</b><b class="ir">R</b><b class="is">S</b></div></div><button class="mute" data-k="MUTE">M</button><button class="mon" data-k="RECMON" hidden>MON</button><button class="solo" data-k="SOLO">S</button>',
-    TPL_HEAD_MASTER='<div class="ti" data-k="EXP"><div class="nm">MASTER</div><div class="meta"><span class="db"></span><b class="clip">CLIP</b></div></div><button class="mute" data-k="MUTE">M</button>',
+var TPL_HEAD_TRACK='<button class="arm" data-k="RECARM" aria-label="Rec arm"></button><div class="ti" data-k="EXP"><div class="nm"></div><div class="meta"><span class="num"></span><span class="db"></span><b class="ir">R</b><b class="is">S</b></div></div><button class="mute" data-k="MUTE">M</button><button class="mon" data-k="RECMON" hidden>MON</button><button class="solo" data-k="SOLO">S</button>',
+    TPL_HEAD_MASTER='<div class="ti" data-k="EXP"><div class="nm">MASTER</div><div class="meta"><span class="db"></span></div></div><button class="mute" data-k="MUTE">M</button>',
     TPL_BODY='<div class="tx" hidden><div class="fader"><div class="thumb"></div></div><div class="sends"></div></div>';
 
 function makeRow(idx){
@@ -527,7 +525,6 @@ function onTrack(t){
     r.vol=v; setText(r.db,mkvolstr(t[4]));
     if(!drag||drag.thumb!==r.thumb) setX(r.thumb,vol2x(v));
   }
-  setFlag(r.el,"clip",+t[6]>0);
   var ns=(+t[10]||0)+(+t[12]||0);
   if(ns!==r.nSends){ r.nSends=ns; if(r.open) syncSends(r); }
 }
@@ -605,8 +602,13 @@ document.addEventListener("click",function(e){
     updateMarkers();
     return;
   }
-  if(b.hasAttribute("data-sync")){ bpmMeasured=false; bpmA=null; }
-  if(b.dataset.cmd){ wwr_req(b.dataset.cmd+(b.hasAttribute("data-sync")?";MARKER;REGION":"")); return; }
+  if(b.hasAttribute("data-proj")){ bpmMeasured=false; bpmA=null; }
+  if(b.dataset.cmd){
+    var extra=b.hasAttribute("data-sync")?";MARKER;REGION":"";
+    if(b===bMetro||b===bSnap) extra=";GET/"+b.dataset.cmd;
+    wwr_req(b.dataset.cmd+extra);
+    return;
+  }
   if(b.dataset.act){ acts[b.dataset.act](); return; }
   var k=b.dataset.k, idx=b.closest(".trk").dataset.t;
   if(k==="EXP") toggleOpen(rows[idx]);
@@ -648,9 +650,14 @@ function endDrag(e){
 document.addEventListener("pointerup",endDrag);
 document.addEventListener("pointercancel",endDrag);
 
-wwr_req_recur("TRANSPORT;BEATPOS",10);
-wwr_req_recur("NTRACK;TRACK;GET/40364;GET/1157",10);
-wwr_req_recur("MARKER;REGION",500);
+// Ritmo da consulta. O main.js manda a próxima requisição assim que a anterior volta;
+// com intervalos de 10 ms isso virava "o mais rápido que a rede aguenta", sempre com todas as tracks.
+// g_wwr_timer_freq é a espera do main.js quando nada está vencido (padrão 100 ms).
+g_wwr_timer_freq=20;
+wwr_req_recur("TRANSPORT;BEATPOS",40);      // relógio e luzes de tempo: 25x/s
+wwr_req_recur("NTRACK;TRACK",250);          // tracks (volume, mute, solo, arm): 4x/s; cliques já pedem a track na hora
+wwr_req_recur("GET/40364;GET/1157",1000);   // metrônomo/snap: também atualizados no clique
+wwr_req_recur("MARKER;REGION",2000);        // listas: também atualizadas ao trocar projeto / criar marcador
 wwr_start();
 </script>
 </body>
