@@ -1,8 +1,10 @@
-# VS - Jean
+# VS Pilot
+
+*by Asher Labs*
 
 Controle remoto do REAPER pelo celular, feito para tocar VS (playback) ao vivo: transporte, mapa das regiões da música, saltos sincronizados no tempo, loop de região, BPM e mixer das tracks.
 
-É uma única página (`vs-jean.html`) servida pela interface web do próprio REAPER. Ela usa o `main.js` que já vem com o REAPER — não precisa instalar nada além disso.
+É uma única página (`vs-pilot.html`) servida pela interface web do próprio REAPER. Ela usa o `main.js` que já vem com o REAPER — não precisa instalar nada além disso.
 
 > ☕ **Curtiu o projeto?** Pague um café ao desenvolvedor — Pix: `pix@asherlabs.com.br` · [saiba mais](#-apoie-este-projeto)
 
@@ -24,12 +26,12 @@ Controle remoto do REAPER pelo celular, feito para tocar VS (playback) ao vivo: 
 
 ## 1. Instalação
 
-1. Coloque `vs-jean.html` na pasta de páginas web do REAPER:
+1. Coloque `vs-pilot.html` na pasta de páginas web do REAPER:
    `%APPDATA%\REAPER\reaper_www_root\`
 2. No REAPER: **Options → Preferences → Control/OSC/web → Add**.
    - **Control surface mode:** `Web browser interface`
    - **Port:** por exemplo `8080`
-   - **Default interface:** `vs-jean.html`
+   - **Default interface:** `vs-pilot.html`
 3. No celular (na mesma rede Wi-Fi do computador), abra o endereço que o REAPER mostra nessa janela, por exemplo `http://192.168.0.10:8080`.
 4. Dica: use **"Adicionar à tela inicial"** no navegador do celular. A página abre em tela cheia, sem barra de endereço.
 
